@@ -43,9 +43,11 @@ class ApplePhotosTopBar extends StatelessWidget {
               bottom: BorderSide(color: ApplePhotosTheme.specularBorder, width: 0.5),
             ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
+          child: SafeArea(
+            bottom: false,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
               // 1. Leading: Cancel + Undo + Redo
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -178,6 +180,7 @@ class ApplePhotosTopBar extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

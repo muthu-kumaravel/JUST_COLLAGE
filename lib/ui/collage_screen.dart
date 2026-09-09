@@ -267,9 +267,13 @@ class _CollageScreenState extends State<CollageScreen> {
   }
 
   void _onCanvasOrientationChanged(CanvasOrientation orientation) {
+    var newRatio = _settings.canvasAspectRatio.withOrientation(orientation);
+    if (orientation.isPortrait && (newRatio.id == '1.91:1' || newRatio.id == '1080:566')) {
+      newRatio = CanvasAspectRatio.ratio4x5.withOrientation(orientation);
+    }
     _updateSettings(
       _settings.copyWith(
-        canvasAspectRatio: _settings.canvasAspectRatio.withOrientation(orientation),
+        canvasAspectRatio: newRatio,
         clearUniformFrameAspectRatio: true,
       ),
     );
@@ -417,15 +421,15 @@ class _CollageScreenState extends State<CollageScreen> {
 
     return Scaffold(
       backgroundColor: ApplePhotosTheme.obsidianBlack,
-      body: SafeArea(
-        child: hasPhotos
-            ? LayoutBuilder(
-                builder: (context, constraints) {
-                  final isDesktop = constraints.maxWidth >= 768;
+      body: hasPhotos
+          ? LayoutBuilder(
+              builder: (context, constraints) {
+                final isDesktop = constraints.maxWidth >= 768;
 
-                  if (isDesktop) {
-                    // Desktop Layout (macOS & Web)
-                    return Column(
+                if (isDesktop) {
+                  // Desktop Layout (macOS & Web)
+                  return SafeArea(
+                    child: Column(
                       children: [
                         // Top Bar with Undo / Redo
                         ApplePhotosTopBar(
@@ -486,14 +490,42 @@ class _CollageScreenState extends State<CollageScreen> {
                           ),
                         ),
                       ],
-                    );
-                  }
+                    ),
+                  );
+                }
 
-                  // Mobile Layout (iOS & Android)
-                  return Column(
-                    children: [
-                      // 1. Apple Photos Top Bar with Undo / Redo
-                      ApplePhotosTopBar(
+                // Mobile Layout (iOS & Android) - Full-Bleed Fluid Glass Stack
+                final mediaQuery = MediaQuery.of(context);
+                final double topPadding = 56.0 + mediaQuery.padding.top;
+                final double bottomPadding = 180.0 + mediaQuery.padding.bottom;
+
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Layer 0: Full-Bleed Canvas Preview (Visible across screen, unclipped on zoom)
+                    Positioned.fill(
+                      child: CollagePreview(
+                        layoutResult: _layoutResult!,
+                        settings: _settings,
+                        photosById: photosMap,
+                        backgroundUiImage: _settings.backgroundImage?.previewImage,
+                        borderUiImage: _settings.borderImage?.previewImage,
+                        padding: EdgeInsets.only(
+                          top: topPadding,
+                          bottom: bottomPadding,
+                        ),
+                        onPhotoTapped: (photo, placement) {
+                          _openCropViewfinder(photo, placement);
+                        },
+                      ),
+                    ),
+
+                    // Layer 1: Floating Translucent Top Bar (Undisturbed on top)
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: ApplePhotosTopBar(
                         settings: _settings,
                         photoCount: _photos.length,
                         canUndo: _undoStack.isNotEmpty,
@@ -506,67 +538,61 @@ class _CollageScreenState extends State<CollageScreen> {
                           setState(() => _activeTool = ApplePhotosTool.photos);
                         },
                       ),
+                    ),
 
-                      // 2. Floating Hero Canvas (Pinch-to-Zoom & Pan)
-                      Expanded(
-                        child: ClipRect(
-                          child: CollagePreview(
-                            layoutResult: _layoutResult!,
+                    // Layer 2: Floating Translucent Inspector Shelf & Bottom Tool Dock
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ApplePhotosShelf(
+                            activeTool: _activeTool,
                             settings: _settings,
-                            photosById: photosMap,
-                            backgroundUiImage: _settings.backgroundImage?.previewImage,
-                            borderUiImage: _settings.borderImage?.previewImage,
-                            onPhotoTapped: (photo, placement) {
-                              _openCropViewfinder(photo, placement);
-                            },
+                            layoutResult: _layoutResult,
+                            photos: _photos,
+                            onLayoutModeChanged: _onLayoutModeChanged,
+                            onCanvasRatioChanged: _onCanvasRatioChanged,
+                            onCanvasOrientationChanged: _onCanvasOrientationChanged,
+                            onUniformRatioChanged: _onUniformRatioChanged,
+                            onUniformOrientationChanged: _onUniformOrientationChanged,
+                            onSpacingChanged: _onSpacingChanged,
+                            onMarginChanged: _onMarginChanged,
+                            onBorderWidthChanged: _onBorderWidthChanged,
+                            onBorderColorChanged: _onBorderColorChanged,
+                            onPickBorderImage: _onPickBorderImage,
+                            onRemoveBorderImage: _onRemoveBorderImage,
+                            onBackgroundColorChanged: _onBackgroundColorChanged,
+                            onPickBackgroundImage: _onPickBackgroundImage,
+                            onRemoveBackgroundImage: _onRemoveBackgroundImage,
+                            onBackgroundBlurChanged: _onBackgroundBlurChanged,
+                            onAddPhotos: _addMorePhotos,
+                            onRemovePhoto: _removePhoto,
                           ),
-                        ),
+                          ApplePhotosDock(
+                            activeTool: _activeTool,
+                            onSelectTool: (tool) {
+                              setState(() => _activeTool = tool);
+                            },
+                            onShuffle: _onShuffle,
+                          ),
+                        ],
                       ),
-
-                      // 3. Apple Photos Inspector Shelf (Dynamic per tool)
-                      ApplePhotosShelf(
-                        activeTool: _activeTool,
-                        settings: _settings,
-                        layoutResult: _layoutResult,
-                        photos: _photos,
-                        onLayoutModeChanged: _onLayoutModeChanged,
-                        onCanvasRatioChanged: _onCanvasRatioChanged,
-                        onCanvasOrientationChanged: _onCanvasOrientationChanged,
-                        onUniformRatioChanged: _onUniformRatioChanged,
-                        onUniformOrientationChanged: _onUniformOrientationChanged,
-                        onSpacingChanged: _onSpacingChanged,
-                        onMarginChanged: _onMarginChanged,
-                        onBorderWidthChanged: _onBorderWidthChanged,
-                        onBorderColorChanged: _onBorderColorChanged,
-                        onPickBorderImage: _onPickBorderImage,
-                        onRemoveBorderImage: _onRemoveBorderImage,
-                        onBackgroundColorChanged: _onBackgroundColorChanged,
-                        onPickBackgroundImage: _onPickBackgroundImage,
-                        onRemoveBackgroundImage: _onRemoveBackgroundImage,
-                        onBackgroundBlurChanged: _onBackgroundBlurChanged,
-                        onAddPhotos: _addMorePhotos,
-                        onRemovePhoto: _removePhoto,
-                      ),
-
-                      // 4. Apple Photos Bottom Tool Dock with Shuffle
-                      ApplePhotosDock(
-                        activeTool: _activeTool,
-                        onSelectTool: (tool) {
-                          setState(() => _activeTool = tool);
-                        },
-                        onShuffle: _onShuffle,
-                      ),
-                    ],
-                  );
-                },
-              )
-            : EmptyStateView(
+                    ),
+                  ],
+                );
+              },
+            )
+          : SafeArea(
+              child: EmptyStateView(
                 onSelectPhotos: () => _pickInitialPhotos(fromFiles: false),
                 onSelectFiles: () => _pickInitialPhotos(fromFiles: true),
                 onTrySamplePhotos: _loadSamplePhotos,
                 isLoading: _isLoading,
               ),
-      ),
+            ),
     );
   }
 }

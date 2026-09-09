@@ -7,6 +7,7 @@ import 'package:just_collage/models/canvas_aspect_ratio.dart';
 import 'package:just_collage/models/collage_settings.dart';
 import 'package:just_collage/models/crop_transform.dart';
 import 'package:just_collage/models/photo_asset.dart';
+import 'package:just_collage/theme/apple_photos_theme.dart';
 import 'package:just_collage/ui/apple_photos_crop_viewfinder.dart';
 import 'package:just_collage/ui/apple_photos_top_bar.dart';
 import 'package:just_collage/ui/widgets/apple_aspect_card.dart';
@@ -268,5 +269,49 @@ void main() {
     expect(result, isNotNull);
     expect(result!.rotationQuarterTurns, equals(1));
     expect(result!.flipHorizontal, isTrue);
+  });
+
+  test('Square 1:1 orientation switching test', () {
+    final square = CanvasAspectRatio.square1x1;
+    expect(square.orientation, equals(CanvasOrientation.portrait));
+
+    // Switching to landscape should update the orientation while keeping ratio 1.0
+    final landscapeSquare = square.withOrientation(CanvasOrientation.landscape);
+    expect(landscapeSquare.orientation, equals(CanvasOrientation.landscape));
+    expect(landscapeSquare.ratio, equals(1.0));
+    expect(landscapeSquare.displayLabel, equals('1:1 Square'));
+
+    // Switching back to portrait
+    final portraitSquare = landscapeSquare.withOrientation(CanvasOrientation.portrait);
+    expect(portraitSquare.orientation, equals(CanvasOrientation.portrait));
+    expect(portraitSquare.ratio, equals(1.0));
+
+    // Toggle orientation
+    final toggled = square.toggleOrientation();
+    expect(toggled.orientation, equals(CanvasOrientation.landscape));
+  });
+
+  test('presetsFor filters out 1.91:1 in portrait but includes it in landscape', () {
+    final portraitPresets = CanvasAspectRatio.presetsFor(CanvasOrientation.portrait);
+    final landscapePresets = CanvasAspectRatio.presetsFor(CanvasOrientation.landscape);
+
+    // 1.91:1 must NOT be in portrait presets
+    expect(portraitPresets.any((p) => p.id == '1.91:1' || p.id == '1080:566'), isFalse);
+
+    // 1.91:1 MUST be in landscape presets
+    expect(landscapePresets.any((p) => p.id == '1.91:1' || p.id == '1080:566'), isTrue);
+
+    // Instagram formats count
+    final igPortrait = portraitPresets.where((p) => p.withOrientation(CanvasOrientation.portrait).isInstagram).toList();
+    expect(igPortrait.length, equals(2)); // 4:5 and 9:16
+
+    final igLandscape = landscapePresets.where((p) => p.withOrientation(CanvasOrientation.landscape).isInstagram).toList();
+    expect(igLandscape.length, equals(1)); // 1.91:1
+  });
+
+  test('Modern iOS transparency tokens', () {
+    // Frosted glass surface should be translucent (< 50% opacity, ~40%)
+    expect(ApplePhotosTheme.frostedGlassSurface.a, lessThan(0.5));
+    expect(ApplePhotosTheme.blurSigma, equals(30.0));
   });
 }

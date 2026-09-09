@@ -13,6 +13,7 @@ class CollagePreview extends StatelessWidget {
   final Map<String, PhotoAsset> photosById;
   final ui.Image? backgroundUiImage;
   final ui.Image? borderUiImage;
+  final EdgeInsets padding;
   final void Function(PhotoAsset photo, CollageItemPlacement placement)? onPhotoTapped;
 
   const CollagePreview({
@@ -22,6 +23,7 @@ class CollagePreview extends StatelessWidget {
     required this.photosById,
     this.backgroundUiImage,
     this.borderUiImage,
+    this.padding = EdgeInsets.zero,
     this.onPhotoTapped,
   });
 
@@ -29,10 +31,10 @@ class CollagePreview extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final double availW = constraints.maxWidth;
-        final double availH = constraints.maxHeight;
+        final double availW = (constraints.maxWidth - padding.horizontal).clamp(100.0, constraints.maxWidth);
+        final double availH = (constraints.maxHeight - padding.vertical).clamp(100.0, constraints.maxHeight);
 
-        // Determine preview display size that fits within available area with padding
+        // Determine preview display size that fits within available unobstructed area with padding
         final double canvasAspect = layoutResult.canvasAspectRatio;
         double displayW = availW - 32;
         double displayH = displayW / canvasAspect;
@@ -47,11 +49,14 @@ class CollagePreview extends StatelessWidget {
 
         final displaySize = Size(displayW, displayH);
 
-        return Center(
-          child: InteractiveViewer(
-            clipBehavior: Clip.hardEdge,
-            minScale: 0.8,
-            maxScale: 4.0,
+        return Padding(
+          padding: padding,
+          child: Center(
+            child: InteractiveViewer(
+              clipBehavior: Clip.none,
+              boundaryMargin: const EdgeInsets.all(double.infinity),
+              minScale: 0.5,
+              maxScale: 5.0,
             child: GestureDetector(
               onTapUp: (details) {
                 if (onPhotoTapped == null) return;
@@ -104,7 +109,8 @@ class CollagePreview extends StatelessWidget {
               ),
             ),
           ),
-        );
+        ),
+      );
       },
     );
   }
