@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 
 /// Centralized Apple Photos design tokens, colors, materials, and typography.
 class ApplePhotosTheme {
-  // Backgrounds & Surfaces
+  // Backgrounds & Surfaces (Modern iOS 18 Translucency)
   static const Color obsidianBlack = Color(0xFF000000);
   static const Color darkCanvas = Color(0xFF0A0A0C);
-  static const Color frostedGlassSurface = Color(0xBF1C1C1E); // ~75% opacity
+  static const Color frostedGlassSurface = Color(0x6618181A); // ~40% opacity modern iOS glass
+  static const Color frostedGlassSurfaceSubtle = Color(0x44141416); // ~27% opacity glass
   static const Color frostedGlassLight = Color(0x33FFFFFF);   // ~20% white glass
   static const Color cardSurface = Color(0xFF1C1C1E);
   static const Color secondarySurface = Color(0xFF2C2C2E);

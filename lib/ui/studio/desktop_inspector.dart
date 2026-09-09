@@ -246,17 +246,22 @@ class DesktopInspector extends StatelessWidget {
           const SizedBox(height: 10),
           SizedBox(
             height: 72,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: CanvasAspectRatio.presets.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 6),
-              itemBuilder: (context, index) {
-                final preset = CanvasAspectRatio.presets[index].withOrientation(curOrientation);
-                final isSelected = preset.id == settings.canvasAspectRatio.id;
-                return AppleAspectCard(
-                  preset: preset,
-                  isSelected: isSelected,
-                  onTap: () => onCanvasRatioChanged(preset),
+            child: Builder(
+              builder: (context) {
+                final presets = CanvasAspectRatio.presetsFor(curOrientation);
+                return ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: presets.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 6),
+                  itemBuilder: (context, index) {
+                    final preset = presets[index].withOrientation(curOrientation);
+                    final isSelected = preset.id == settings.canvasAspectRatio.id;
+                    return AppleAspectCard(
+                      preset: preset,
+                      isSelected: isSelected,
+                      onTap: () => onCanvasRatioChanged(preset),
+                    );
+                  },
                 );
               },
             ),

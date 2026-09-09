@@ -36,7 +36,6 @@ class CanvasAspectRatio {
   }
 
   CanvasAspectRatio withOrientation(CanvasOrientation newOrientation) {
-    if (id == '1:1') return this;
     return CanvasAspectRatio(
       id: id,
       label: label,
@@ -192,6 +191,15 @@ class CanvasAspectRatio {
     ratio3x5,
     ratio2x3,
   ];
+
+  /// Returns presets applicable for the given orientation.
+  /// Omits Instagram landscape format 1.91:1 (1080×566) when orientation is portrait.
+  static List<CanvasAspectRatio> presetsFor(CanvasOrientation orientation) {
+    if (orientation.isPortrait) {
+      return presets.where((p) => p.id != '1.91:1' && p.id != '1080:566').toList();
+    }
+    return presets;
+  }
 
   @override
   bool operator ==(Object other) =>

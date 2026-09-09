@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../models/canvas_aspect_ratio.dart';
@@ -80,15 +81,28 @@ class ApplePhotosShelf extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      constraints: const BoxConstraints(maxHeight: 155),
-      color: ApplePhotosTheme.frostedGlassSurface,
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 700),
-          child: _buildToolContent(),
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(
+          sigmaX: ApplePhotosTheme.blurSigma,
+          sigmaY: ApplePhotosTheme.blurSigma,
+        ),
+        child: Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(maxHeight: 155),
+          decoration: const BoxDecoration(
+            color: ApplePhotosTheme.frostedGlassSurface,
+            border: Border(
+              top: BorderSide(color: ApplePhotosTheme.specularBorder, width: 0.5),
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 700),
+              child: _buildToolContent(),
+            ),
+          ),
         ),
       ),
     );
@@ -310,19 +324,24 @@ class ApplePhotosShelf extends StatelessWidget {
         // Horizontal Aspect Cards
         SizedBox(
           height: 72,
-          child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            scrollDirection: Axis.horizontal,
-            itemCount: CanvasAspectRatio.presets.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 8),
-            itemBuilder: (context, index) {
-              final preset = CanvasAspectRatio.presets[index].withOrientation(curOrientation);
-              final isSelected = preset.id == settings.canvasAspectRatio.id;
+          child: Builder(
+            builder: (context) {
+              final presets = CanvasAspectRatio.presetsFor(curOrientation);
+              return ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                scrollDirection: Axis.horizontal,
+                itemCount: presets.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final preset = presets[index].withOrientation(curOrientation);
+                  final isSelected = preset.id == settings.canvasAspectRatio.id;
 
-              return AppleAspectCard(
-                preset: preset,
-                isSelected: isSelected,
-                onTap: () => onCanvasRatioChanged(preset),
+                  return AppleAspectCard(
+                    preset: preset,
+                    isSelected: isSelected,
+                    onTap: () => onCanvasRatioChanged(preset),
+                  );
+                },
               );
             },
           ),
